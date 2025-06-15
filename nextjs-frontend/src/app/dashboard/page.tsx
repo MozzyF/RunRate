@@ -1,101 +1,171 @@
 'use client';
 
-import React, { useState } from 'react';
-import { BudgetGrid } from '@/components/BudgetGrid';
-import { ForecastToggle } from '@/components/ForecastToggle';
-import { SummaryChart } from '@/components/SummaryChart';
-
-// Mock data - replace with actual API calls
-const mockData = {
-  budgetItems: [
-    {
-      id: '1',
-      category: 'Salary',
-      months: {
-        Jan: 5000,
-        Feb: 5000,
-        Mar: 5000,
-      },
-    },
-    {
-      id: '2',
-      category: 'Rent',
-      months: {
-        Jan: -1500,
-        Feb: -1500,
-        Mar: -1500,
-      },
-    },
-  ],
-  summaryData: {
-    labels: ['Jan', 'Feb', 'Mar'],
-    income: [5000, 5000, 5000],
-    expenses: [2000, 2000, 2000],
-    balance: [3000, 3000, 3000],
-  },
-};
+import { useEffect, useState } from 'react';
+import Layout from '@/components/Layout';
+import SummaryCard from '@/components/SummaryCard';
+import CostBreakdownChart from '@/components/CostBreakdownChart';
+import ProjectsTable from '@/components/ProjectsTable';
+import ScenariosList from '@/components/ScenariosList';
+import { DashboardData } from '@/types/dashboard';
+import { DollarSign, TrendingUp, TrendingDown, Percent } from 'lucide-react';
 
 export default function DashboardPage() {
-  const [isAIForecast, setIsAIForecast] = useState(false);
-  const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleBudgetUpdate = (id: string, month: string, value: number) => {
-    // TODO: Implement API call to update budget
-    console.log('Update budget:', { id, month, value });
-  };
+  useEffect(() => {
+    // TODO: Replace with actual API call
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/dashboard');
+        const jsonData = await response.json();
+        setData(jsonData);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        // For now, use mock data
+        setData({
+          runRateSummary: {
+            totalRevenue: 2500000,
+            totalExpenses: 1800000,
+            netIncome: 700000,
+            revenueGrowth: 0.15,
+            expenseGrowth: 0.08,
+            profitMargin: 0.28,
+          },
+          costBreakdown: [
+            { id: '1', name: 'Personnel', amount: 1200000, percentage: 0.67 },
+            { id: '2', name: 'Office Space', amount: 300000, percentage: 0.17 },
+            { id: '3', name: 'Technology', amount: 200000, percentage: 0.11 },
+            { id: '4', name: 'Other', amount: 100000, percentage: 0.05 },
+          ],
+          projects: [
+            {
+              id: '1',
+              name: 'Product Launch',
+              status: 'On Track',
+              budget: 500000,
+              spent: 350000,
+            },
+            {
+              id: '2',
+              name: 'Market Expansion',
+              status: 'At Risk',
+              budget: 750000,
+              spent: 600000,
+            },
+            {
+              id: '3',
+              name: 'R&D Initiative',
+              status: 'Off Track',
+              budget: 1000000,
+              spent: 950000,
+            },
+          ],
+          scenarios: [
+            {
+              id: '1',
+              name: 'Base Case',
+              type: 'Base',
+              description: 'Current market conditions and growth trajectory',
+              metrics: [
+                { name: 'Revenue', value: 2500000, change: 0.15 },
+                { name: 'Headcount', value: 150, change: 0.1 },
+                { name: 'Office Space', value: 10000, change: 0.05 },
+              ],
+            },
+            {
+              id: '2',
+              name: 'Optimistic Growth',
+              type: 'Optimistic',
+              description: 'Accelerated market adoption and expansion',
+              metrics: [
+                { name: 'Revenue', value: 3000000, change: 0.25 },
+                { name: 'Headcount', value: 180, change: 0.2 },
+                { name: 'Office Space', value: 12000, change: 0.1 },
+              ],
+            },
+            {
+              id: '3',
+              name: 'Conservative Outlook',
+              type: 'Conservative',
+              description: 'Market challenges and slower growth',
+              metrics: [
+                { name: 'Revenue', value: 2000000, change: 0.05 },
+                { name: 'Headcount', value: 120, change: -0.05 },
+                { name: 'Office Space', value: 8000, change: -0.1 },
+              ],
+            },
+          ],
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-lg text-gray-600 dark:text-gray-400">Loading dashboard...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Layout>
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-lg text-red-600 dark:text-red-400">Failed to load dashboard data</div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Financial Dashboard</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Track and forecast your personal finances
-          </p>
+    <Layout>
+      <div className="space-y-6 p-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <SummaryCard
+            title="Total Revenue"
+            value={data.runRateSummary.totalRevenue}
+            trend={data.runRateSummary.revenueGrowth > 0 ? 'up' : 'down'}
+            trendValue={Math.abs(data.runRateSummary.revenueGrowth)}
+            icon={<DollarSign className="h-6 w-6" />}
+          />
+          <SummaryCard
+            title="Total Expenses"
+            value={data.runRateSummary.totalExpenses}
+            trend={data.runRateSummary.expenseGrowth > 0 ? 'up' : 'down'}
+            trendValue={Math.abs(data.runRateSummary.expenseGrowth)}
+            icon={<DollarSign className="h-6 w-6" />}
+          />
+          <SummaryCard
+            title="Net Income"
+            value={data.runRateSummary.netIncome}
+            trend={data.runRateSummary.netIncome > 0 ? 'up' : 'down'}
+            trendValue={Math.abs(data.runRateSummary.netIncome)}
+            icon={<TrendingUp className="h-6 w-6" />}
+          />
+          <SummaryCard
+            title="Profit Margin"
+            value={data.runRateSummary.profitMargin}
+            trend={data.runRateSummary.profitMargin > 0 ? 'up' : 'down'}
+            trendValue={Math.abs(data.runRateSummary.profitMargin)}
+            icon={<Percent className="h-6 w-6" />}
+          />
         </div>
 
-        <div className="mb-8">
-          <ForecastToggle isAIForecast={isAIForecast} onToggle={setIsAIForecast} />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <CostBreakdownChart data={data.costBreakdown} />
+          <ProjectsTable data={data.projects} />
         </div>
 
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Cash Flow Summary</h2>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setChartType('bar')}
-                className={`px-3 py-1 rounded ${
-                  chartType === 'bar'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-700 border'
-                }`}
-              >
-                Bar
-              </button>
-              <button
-                onClick={() => setChartType('line')}
-                className={`px-3 py-1 rounded ${
-                  chartType === 'line'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white text-gray-700 border'
-                }`}
-              >
-                Line
-              </button>
-            </div>
-          </div>
-          <SummaryChart data={mockData.summaryData} type={chartType} />
-        </div>
-
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Budget Grid</h2>
-          </div>
-          <div className="p-6">
-            <BudgetGrid data={mockData.budgetItems} onUpdate={handleBudgetUpdate} />
-          </div>
-        </div>
+        <ScenariosList data={data.scenarios} />
       </div>
-    </div>
+    </Layout>
   );
 } 

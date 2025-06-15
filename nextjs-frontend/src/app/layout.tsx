@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import { ClerkProvider } from "@clerk/nextjs";
+import Navbar from "@/components/Navbar";
 import "./globals.css";
-import Navbar from '../components/Navbar'
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Personal FP&A",
-  description: "Professional-grade financial planning and analysis tools for individuals",
+  title: "RunRate - Financial Planning & Analysis",
+  description: "A modern financial planning and analysis tool for businesses",
 };
 
 export default function RootLayout({
@@ -14,17 +18,24 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body>
-          <div className="min-h-screen bg-gray-50">
-            <Navbar />
-            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-              {children}
-            </main>
-          </div>
-        </body>
-      </html>
-    </ClerkProvider>
-  )
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className} h-full antialiased`}>
+        <ClerkProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+              <Navbar />
+              <main className="relative">
+                {children}
+              </main>
+            </div>
+          </ThemeProvider>
+        </ClerkProvider>
+      </body>
+    </html>
+  );
 } 
